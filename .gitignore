@@ -1,0 +1,5 @@
+connman.db
+.idea
+__pycache__
+identifier.sqlite
+pyrightconfig.json

@@ -1,0 +1,367 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import os
+import sys
+from getpass import getpass
+
+from connection_handler import (
+    ConnectionHandlerException,
+    RDPHandler,
+    SSHHandler,
+    VMRCHandler,
+    VNCHandler,
+)
+from database_connection import DatabaseConnection
+from print_table import print_json_as_table
+
+PROTOCOLS = ["ssh", "rdp", "vnc", "vmrc"]
+
+
+# Parse command line arguments
+def parse_args():
+
+    parser = argparse.ArgumentParser(description="Manage connections.")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Create the parser for the "add" command
+    parser_add = subparsers.add_parser(
+        "add", help='Add a new connection. Can be shortened to "a".'
+    )
+
+    # Create the parser for the "connect" command
+    parser_connect = subparsers.add_parser(
+        "connect", help='Connect to a host by alias or id. Can be shortened to "c".'
+    )
+    parser_connect.add_argument(
+        "alias_or_id", help="The alias or id of the connection to connect to."
+    )
+
+    # Create the parser for the "list" command
+    parser_list = subparsers.add_parser(
+        name="list",
+        help='List all connections or all connections for a specified protocol. Can be shortened to "l".',
+    )
+    parser_list.add_argument(
+        "protocol_or_tag",
+        nargs="?",
+        default=None,
+        help="The protocol or tag to filter connections on (optional).",
+    )
+
+    # Create the parser for the "find" command
+    parser_find = subparsers.add_parser(
+        "find",
+        help='Search all aliases and hostnames in the table and return all matches. Can be shortened to "f".',
+    )
+    parser_find.add_argument("regex", help="The regex pattern to search for.")
+
+    parser_delete = subparsers.add_parser(
+        "delete", help='Delete connection by alias name. Can be shortened to "d".'
+    )
+    parser_delete.add_argument(
+        "alias_or_id", help="The alias or id of the connection to be deleted."
+    )
+
+    parser_edit = subparsers.add_parser(
+        "edit", help='Edit a connection by alias. Can be shortened to "e".'
+    )
+    parser_edit.add_argument(
+        "alias_or_id", help="The alias or id of the connection to be edited."
+    )
+
+    # parser = argparse.ArgumentParser(description="Manage database connections")
+    # parser.add_argument(
+    #     "command", help="The command to execute (add, connect, delete, list, find)"
+    # )
+    # parser.add_argument("alias", nargs="?", help="The alias for the connection")
+    # parser.add_argument("protocol", help="The protocol type (e.g., ssh, rdp, vnc)", nargs="?")
+    return parser
+
+
+# Map shortened commands to full command names
+def map_shortened_commands(args):
+    # Map for shortened aliases to full command names
+    command_aliases = {
+        "a": "add",
+        "l": "list",
+        "f": "find",
+        "c": "connect",
+        "d": "delete",
+        "e": "edit",
+    }
+
+    # Check if the first argument is a known alias
+    if args[0] in command_aliases:
+        # Replace it with the full command name
+        args[0] = command_aliases[args[0]]
+    return args
+
+
+def password_comparison():
+    password1 = getpass("Enter the password: ")
+    password2 = getpass("Re-enter the password: ")
+    if password1 == password2:
+        return password1
+    else:
+        print("Passwords do not match. Please try again.")
+        return password_comparison()
+
+
+def is_ipv6(ip):
+    if ":" in ip:
+        return True
+    return False
+
+
+# Add a new connection to the database
+def add_connection(database):
+    while True:
+        alias = input("Enter a unique alias for the connection: ")
+        # Check if the alias already exists
+        if alias.isdigit():
+            print("Invalid alias. The alias cannot be only digits. Please try again.")
+        elif database.alias_exists(alias):
+            print("This alias already exists. Please choose a different one.")
+        else:
+            break
+
+    while True:
+        protocol = input(f"Enter the protocol (e.g. {', '.join(PROTOCOLS)}): ")
+        if protocol not in PROTOCOLS:
+            print(f"Invalid protocol. Please enter {', '.join(PROTOCOLS)}.")
+        else:
+            break
+
+    if protocol.casefold() == "vmrc":
+        host_or_ip = input("Enter vmrc URL (e.g. vmrc://<esxi-host>/?moid=<vmid>): ")
+        port = None
+        username = None
+    else:
+        while True:
+            host_or_ip = input("Enter the hostname or IP address: ")
+            if not host_or_ip:
+                print("Invalid hostname or IP address. Please try again.")
+            else:
+                break
+
+        port = input("Enter the port (press Enter for default): ") or None
+        username = input("Enter the username (press Enter if not applicable): ") or None
+    password = None
+    ssh_key_path = None
+    domain = None
+    resolution = None
+    tag = None
+
+    # Protocol-specific fields
+    if protocol.casefold() == "ssh":
+        auth_method = (
+            input("Choose authentication method, password or key (default: password): ")
+            .strip()
+            .lower()
+        )
+        if auth_method == "key":
+            ssh_key_path = (
+                input(
+                    "Enter path to SSH private key (default is ~/.ssh/id_rsa): "
+                ).strip()
+                or "~/.ssh/id_rsa"
+            )
+        else:
+            password = password_comparison()
+    elif protocol.casefold() == "rdp":
+        if (
+            is_ipv6(host_or_ip)
+            and not host_or_ip.startswith("[")
+            and not host_or_ip.endswith("]")
+        ):
+            host_or_ip = f"[{host_or_ip}]"
+        password = password_comparison()
+        domain = input("Enter the domain (press Enter if not applicable): ") or None
+        resolution = input("Enter the resolution (e.g., 1920x1080): ") or None
+    # Add other protocol-specific fields as needed
+
+    while True:
+        tag = input("Enter an optional tag (i.e lab, tools, personal): ") or None
+        if tag in PROTOCOLS:
+            print("Invalid tag. Unable to use protocol as a tag.")
+        else:
+            break
+
+    # Collect extras
+    extras = {}
+    print("Enter extra options (key=value). Type 'done' when finished:")
+    while True:
+        extra = input().strip()
+        if extra.lower() == "done":
+            break
+        try:
+            key, value = extra.split("=")
+            extras[key.strip()] = value.strip()
+        except ValueError:
+            print("Invalid format for extra options. Please use 'key=value' format.")
+    try:
+        # Use a dictionary to pass only relevant fields based on the protocol
+        connection_details = {
+            "alias": alias,
+            "protocol": protocol,
+            "host_or_ip": host_or_ip,
+            "port": port,
+            "username": username,
+            "password": password,
+            "ssh_key_path": ssh_key_path,
+            "domain": domain,
+            "resolution": resolution,
+            "tag": tag,
+            "extras": extras,
+        }
+
+        # Filter out None values, as they are not needed
+        connection_details = {
+            k: v for k, v in connection_details.items() if v is not None
+        }
+
+        database.add_connection(**connection_details)
+        print("Connection added successfully.")
+    except Exception as e:
+        print(f"Error adding connection: {e}")
+    finally:
+        database.close()
+
+
+# Delete a connection from the database
+def delete_connection(database, alias_or_id):
+    try:
+        if alias_or_id.isdigit():
+            database.delete_connection_by_id(alias_or_id)
+        else:
+            database.delete_connection_by_alias(alias_or_id)
+        print(f"Connection '{alias_or_id}' deleted successfully.")
+    except Exception as e:
+        print(f"An error occurred while deleting connection: {e}")
+    finally:
+        database.close()
+
+
+# Edit a connection in the database
+def edit_connection(database, alias, protocol):
+    # Implement the logic to edit a connection
+    current_data = database.get_connection_by_protocol(alias, protocol)
+    print(f"Editing connection '{alias}'")
+    alias = input("Update Alias [{current_data['alias']])") or current_data["alias"]
+
+
+# Get a summary of connections from the database
+def get_connections_summary(database, protocol_or_tag):
+    try:
+        connections = database.get_connection_summary()
+        if protocol_or_tag:
+            if protocol_or_tag in PROTOCOLS:
+                connections = [
+                    x for x in connections if x["protocol"] == protocol_or_tag
+                ]
+            else:
+                connections = [x for x in connections if x["tag"] == protocol_or_tag]
+        if connections:
+            print_json_as_table(connections)
+        else:
+            print("No connections found.")
+    except Exception as e:
+        print(f"An error occurred while getting connections {e}")
+    finally:
+        database.close()
+
+
+# Get detailed information about connections from the database
+def find_connection(database, protocol, alias):
+    # Implement the logic to find a connection by alias
+    pass
+
+
+# Connect to a connection by alias or id
+def connect_to_alias_or_id(database, alias_or_id):
+    if alias_or_id.isdigit():
+        connection_details = database.get_connection_by_id(int(alias_or_id))
+    else:
+        connection_details = database.get_connection_by_alias(alias_or_id)
+    if not connection_details:
+        print(f"No connection found with alias or ID of: '{alias_or_id}'.")
+        return
+
+    # Extract common connection parameters
+    host_or_ip = connection_details["host_or_ip"]
+    username = connection_details["username"]
+    password = connection_details["password"]
+    protocol = connection_details["protocol"]
+    domain = connection_details["domain"]
+    resolution = connection_details["resolution"]
+    ssh_key_path = connection_details["ssh_key_path"]
+
+    # Determine the protocol and create the appropriate handler
+    if protocol.casefold() == "ssh":
+        try:
+            ssh_handler = SSHHandler(host_or_ip, username, password, ssh_key_path)
+            ssh_handler.connect()
+        except ConnectionHandlerException as e:
+            print(f"SSH: Error establishing connection")
+    if protocol.casefold() == "rdp":
+        try:
+            rdp_handler = RDPHandler(host_or_ip, username, password, domain, resolution)
+            rdp_handler.connect()
+        except ConnectionHandlerException as e:
+            print(f"RDP: Error establishing connection")
+    if protocol.casefold() == "vmrc":
+        try:
+            vmrc_handler = VMRCHandler(host_or_ip)
+            vmrc_handler.connect()
+        except ConnectionHandlerException as e:
+            print(f"VMRC: Error establishing connection")
+    # Handle other protocols similarly...
+
+    # Don't forget to close your database connection when done
+    database.close()
+
+
+# Main function
+def main():
+    mapped_args = map_shortened_commands(sys.argv[1:])
+    parser = parse_args()
+    args = parser.parse_args(mapped_args)
+
+    # Create a variable for the database file which will be ~/.connman.db
+    db_path = os.path.expanduser("~/.connman.db")
+    # Establish the database connection here, once.
+    database = DatabaseConnection(db_path)
+
+    if args.command.casefold() == "add":
+        add_connection(database)
+    elif args.command.casefold() == "delete":
+        if not args.alias_or_id:
+            raise ValueError("Delete command requires an alias or id.")
+        delete_connection(database, args.alias_or_id)
+    elif args.command.casefold() == "list":
+        get_connections_summary(database, args.protocol_or_tag)
+        # detail_level = (
+        #     "all" if args.alias and args.alias.casefold() == "all" else "summary"
+        # )
+        # get_connections_by_protocol(database, args.protocol, detail_level)
+    elif args.command.casefold() == "find":
+        if not args.alias:
+            raise ValueError("find command requires an alias")
+        find_connection(database, args.protocol, args.alias)
+    elif args.command.casefold() == "connect":
+        if not args.alias_or_id:
+            raise ValueError("connect command requires an alias")
+        connect_to_alias_or_id(database, args.alias_or_id)
+    elif args.command.casefold() == "edit":
+        if not args.alias_or_id:
+            raise ValueError("edit command requires an alias")
+        edit_connection(database, args.alias_or_id)
+    else:
+        raise ValueError("Invalid command")
+
+
+# Run the main function
+if __name__ == "__main__":
+    main()
