@@ -4,8 +4,8 @@ import argparse
 import os
 import sys
 
-from connection_service import ConnectionService
-from database_connection import DatabaseConnection
+from connmanager.connection_service import ConnectionService
+from connmanager.database_connection import DatabaseConnection
 
 DB_PATH = os.path.expanduser("~/.cm.db")
 
