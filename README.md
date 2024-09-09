@@ -43,7 +43,7 @@ You will need to install the following:
 ### Clone the Repository
 
 ```sh
-git clone https://github.com/yourusername/connmanager.git
+git clone https://github.com/sugashane/connmanager.git
 cd connmanager
 ```
 
