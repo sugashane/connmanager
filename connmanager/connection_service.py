@@ -1,14 +1,14 @@
 import getpass
 import json
 
-from connection_handler import (
+from connmanager.connection_handler import (
     ConnectionHandlerException,
     RDPHandler,
     SSHHandler,
     VMRCHandler,
     VNCHandler,
 )
-from print_table import print_json_as_table
+from connmanager.print_table import print_json_as_table
 
 PROTOCOLS = ["ssh", "rdp", "vnc", "vmrc"]
 
