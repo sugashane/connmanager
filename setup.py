@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="connmanager",
@@ -6,7 +6,7 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
-            "cm=connmanager.cm:main",
+            "cm=connmanager.main:main",
         ],
     },
     author="Shane Bebber",
