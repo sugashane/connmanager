@@ -53,6 +53,12 @@ cd connmanager
 pip install .
 ```
 
+-or-
+
+```sh
+pip3 install .
+```
+
 ## Usage
 
 ### Add a Connection
