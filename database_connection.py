@@ -1,5 +1,5 @@
-import sqlite3
 import json
+import sqlite3
 
 
 class DatabaseConnection:
@@ -69,15 +69,14 @@ class DatabaseConnection:
         )
         self.conn.commit()
 
-    def delete_connection_by_alias(self, alias):
-        # cursor = self.conn.cursor()
-        self.cursor.execute("DELETE FROM connections WHERE alias=?", (alias,))
-        self.conn.commit()
-
-    def delete_connection_by_id(self, id):
-        # cursor = self.conn.cursor()
-        self.cursor.execute("DELETE FROM connections WHERE id=?", (id,))
-        self.conn.commit()
+    def delete_connection(self, alias_or_id):
+        try:
+            query = "DELETE FROM connections WHERE alias = ? OR id = ?"
+            self.cursor.execute(query, (alias_or_id, alias_or_id))
+            self.conn.commit()
+        except Exception as e:
+            print(f"An error occurred while deleting the connection: {e}")
+            self.conn.rollback()
 
     def edit_connection(
         self, connection_id, protocol, host_or_ip, port, username, password
@@ -93,10 +92,31 @@ class DatabaseConnection:
         )
         self.conn.commit()
 
-    def search_connections(self, protocol):
-        # cursor = self.conn.cursor()
-        self.cursor.execute("SELECT * FROM connections WHERE protocol=?", (protocol,))
-        return self.cursor.fetchall()
+    def search_connections(self, search_info):
+        try:
+            query = """
+            SELECT id, alias, protocol, host_or_ip, tag FROM connections
+            WHERE alias LIKE ? OR host_or_ip LIKE ? OR username LIKE ? OR protocol LIKE ? OR tag LIKE ?
+            """
+            search_pattern = f"%{search_info}%"
+            self.cursor.execute(
+                query,
+                (
+                    search_pattern,
+                    search_pattern,
+                    search_pattern,
+                    search_pattern,
+                    search_pattern,
+                ),
+            )
+            results = self.cursor.fetchall()
+            if results:
+                columns = [column[0] for column in self.cursor.description]
+                return [dict(zip(columns, result)) for result in results]
+            return []
+        except Exception as e:
+            print(f"An error occurred while searching for connections: {e}")
+            return []
 
     def get_connections_by_protocol(self, protocol):
         try:
@@ -111,7 +131,7 @@ class DatabaseConnection:
     def get_connection_summary(self):
         try:
             self.cursor.execute(
-                "SELECT id, alias, protocol, tag FROM connections ORDER BY id"
+                "SELECT id, alias, protocol, host_or_ip, tag FROM connections ORDER BY id"
             )
             return [dict(row) for row in self.cursor.fetchall()]
         except sqlite3.Error as e:
@@ -133,6 +153,45 @@ class DatabaseConnection:
             return dict(row)
         else:
             raise ValueError(f"Connection with id '{id}' not found")
+
+    def get_connection(self, alias_or_id):
+        try:
+            query = "SELECT * FROM connections WHERE alias = ? OR id = ?"
+            self.cursor.execute(query, (alias_or_id, alias_or_id))
+            result = self.cursor.fetchone()
+            if result:
+                columns = [column[0] for column in self.cursor.description]
+                return dict(zip(columns, result))
+            return None
+        except Exception as e:
+            print(f"An error occurred while retrieving the connection: {e}")
+            return None
+
+    def update_connection(self, alias_or_id, **connection_details):
+        try:
+            # Construct the update query
+            set_clause = ", ".join([f"{key} = ?" for key in connection_details.keys()])
+            query = f"UPDATE connections SET {set_clause} WHERE alias = ? OR id = ?"
+            params = list(connection_details.values()) + [alias_or_id, alias_or_id]
+
+            # Execute the update query
+            self.cursor.execute(query, params)
+            self.conn.commit()
+        except Exception as e:
+            print(f"An error occurred while updating the connection: {e}")
+            self.conn.rollback()
+
+    def get_all_connections(self):
+        try:
+            self.cursor.execute("SELECT * FROM connections")
+            results = self.cursor.fetchall()
+            if results:
+                columns = [column[0] for column in self.cursor.description]
+                return [dict(zip(columns, result)) for result in results]
+            return []
+        except Exception as e:
+            print(f"An error occurred while retrieving all connections: {e}")
+            return []
 
     def alias_exists(self, alias):
         query = "SELECT COUNT(*) FROM connections WHERE alias = ?"
