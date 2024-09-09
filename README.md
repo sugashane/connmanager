@@ -1,4 +1,4 @@
-# ConnManager# ConnManager
+# ConnManager
 
 A connection manager for SSH, RDP, VNC, and VMRC.
 
