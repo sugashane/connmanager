@@ -61,6 +61,9 @@ pip3 install .
 
 ## Usage
 
+> [!NOTE]
+> Each command has a shortened version available. For example, add can be shortened to a, delete to d, etc.
+
 ### Add a Connection
 
 ```sh
