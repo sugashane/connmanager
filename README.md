@@ -113,7 +113,7 @@ cm export <json_file>
 
 By default, the database is stored at: `~/.cm.db`
 
-You can change the database location by updating the DB_PATH variable in the cm.py script.
+You can change the database location by updating the DB_PATH variable in the main.py script.
 
 ## License
 
