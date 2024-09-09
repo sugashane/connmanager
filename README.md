@@ -61,13 +61,16 @@ pip3 install .
 
 ## Usage
 
-> [!NOTE]
-> Each command has a shortened version available. For example, add can be shortened to a, delete to d, etc.
-
 ### Add a Connection
 
 ```sh
 cm add
+```
+
+-or-
+
+```sh
+cm a
 ```
 
 ### Connect to a Host
@@ -76,10 +79,22 @@ cm add
 cm connect <alias_or_id>
 ```
 
+-or-
+
+```sh
+cm c <alias_or_id>
+```
+
 ### List Connections
 
 ```sh
 cm list <optional: protocol name or tag name>
+```
+
+-or-
+
+```sh
+cm l <optional: protocol name or tag name>
 ```
 
 ### Search Connections
@@ -88,10 +103,22 @@ cm list <optional: protocol name or tag name>
 cm search <text>
 ```
 
+-or-
+
+```sh
+cm s <text>
+```
+
 ### Delete a Connection
 
 ```sh
 cm delete <alias_or_id>
+```
+
+-or-
+
+```sh
+cm d <alias_or_id>
 ```
 
 ### Edit a Connection
@@ -100,16 +127,34 @@ cm delete <alias_or_id>
 cm edit <alias_or_id>
 ```
 
+-or-
+
+```sh
+cm e <alias_or_id>
+```
+
 ### Import Connections from JSON
 
 ```sh
 cm import <json_file>
 ```
 
+-or-
+
+```sh
+cm i <json_file>
+```
+
 ### Export Connections to JSON
 
 ```sh
 cm export <json_file>
+```
+
+-or-
+
+```sh
+cm x <json_file>
 ```
 
 ## Database Location
