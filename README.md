@@ -12,7 +12,7 @@ A connection manager for SSH, RDP, VNC, and VMRC.
 
 **Security Warning**: Passwords are stored in the database and exported JSON files as plain text. To ensure the security of your credentials, avoid making these files publicly visible. Additionally, providing a password when adding an entry is optional. If you choose not to provide a password, you will be prompted to enter it when connecting.
 
-Implmenting encryption is planned and will be in a serparate repo in order to have both options available.
+Implementing encryption is planned and will be in a separate repo in order to have both options available.
 
 ## Prerequisites
 
