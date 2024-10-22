@@ -44,7 +44,7 @@ def parse_args():
     # Create the parser for the "search" command
     parser_search = subparsers.add_parser(
         "search",
-        help='Search all aliases and IP/hostnames in the table and return all matches. Can be shortened to "f".',
+        help='Search all aliases and IP/hostnames in the table and return all matches. Can be shortened to "s".',
     )
     parser_search.add_argument("text", help="The text pattern to search for.")
 

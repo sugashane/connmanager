@@ -78,12 +78,6 @@ class RDPHandler(ConnectionHandler):
         rdp_command.append("/cert:ignore")
         command_str = " ".join(rdp_command)
         try:
-            # subprocess.run(
-            #     rdp_command,
-            #     check=True,
-            #     stdout=subprocess.DEVNULL,
-            #     stderr=subprocess.DEVNULL,
-            # )
             subprocess.run(
                 command_str,
                 check=True,

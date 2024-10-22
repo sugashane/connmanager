@@ -323,22 +323,22 @@ class ConnectionService:
                         host_or_ip, username, password, ssh_key_path
                     )
                     ssh_handler.connect()
-                except ConnectionHandlerException as e:
-                    print(f"SSH: Error establishing connection: {e}")
+                except ConnectionHandlerException:
+                    print("SSH connection failed/timed out")
             elif protocol.casefold() == "rdp":
                 try:
                     rdp_handler = RDPHandler(
                         host_or_ip, username, password, domain, resolution
                     )
                     rdp_handler.connect()
-                except ConnectionHandlerException as e:
-                    print(f"RDP: Error establishing connection: {e}")
+                except ConnectionHandlerException:
+                    print(f"RDP connection failed/timed out")
             elif protocol.casefold() == "vmrc":
                 try:
                     vmrc_handler = VMRCHandler(host_or_ip)
                     vmrc_handler.connect()
                 except ConnectionHandlerException as e:
-                    print(f"VMRC: Error establishing connection: {e}")
+                    print(f"VMRC connection failed/timed out")
             elif protocol.casefold() == "vnc":
                 try:
                     vnc_handler = VNCHandler(host_or_ip, username, password)
