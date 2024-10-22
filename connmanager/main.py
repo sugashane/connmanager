@@ -102,6 +102,10 @@ def map_shortened_commands(args):
 
 # Main function
 def main():
+    if len(sys.argv) < 2:
+        print("No command provided. Use -h or --help for usage information.")
+        sys.exit(1)
+
     mapped_args = map_shortened_commands(sys.argv[1:])
     parser = parse_args()
     args = parser.parse_args(mapped_args)
