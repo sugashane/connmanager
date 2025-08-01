@@ -3,7 +3,7 @@ import subprocess
 
 
 class ConnectionHandler:
-    def __init__(self, host_or_ip, port, username, password, protocol):
+    def __init__(self, host_or_ip, port=None, username=None, password=None, protocol=None):
         self.host_or_ip = host_or_ip
         self.port = port
         self.username = username
@@ -17,8 +17,8 @@ class ConnectionHandler:
 class SSHHandler(ConnectionHandler):
     protocol = "ssh"
 
-    def __init__(self, host_or_ip, port, username, password=None, ssh_key_path=None):
-        super().__init__(host_or_ip, port, username, password, protocol="ssh")
+    def __init__(self, host_or_ip, port=None, username=None, password=None, ssh_key_path=None):
+        super().__init__(host_or_ip, port=port, username=username, password=password, protocol="ssh")
         self.ssh_key_path = ssh_key_path
 
     def connect(self):
@@ -57,10 +57,8 @@ class SSHHandler(ConnectionHandler):
 class RDPHandler(ConnectionHandler):
     protocol = "rdp"
 
-    def __init__(
-        self, host_or_ip, username, password=None, domain=None, resolution=None
-    ):
-        super().__init__(host_or_ip, username, password, protocol="rdp")
+    def __init__(self, host_or_ip, username=None, password=None, domain=None, resolution=None):
+        super().__init__(host_or_ip, username=username, password=password, protocol="rdp")
         self.domain = domain
         self.resolution = resolution
 
@@ -95,7 +93,7 @@ class VMRCHandler(ConnectionHandler):
     protocol = "vmrc"
 
     def __init__(self, host_or_ip):
-        super().__init__(host_or_ip, username=None, password=None, protocol="vmrc")
+        super().__init__(host_or_ip, protocol="vmrc")
 
     def connect(self):
         vmrc_command = [f'open "{self.host_or_ip}"']
