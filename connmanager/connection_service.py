@@ -309,6 +309,7 @@ class ConnectionService:
 
             # Extract common connection parameters
             host_or_ip = connection_details["host_or_ip"]
+            port = connection_details["port"]
             username = connection_details["username"]
             password = connection_details["password"]
             protocol = connection_details["protocol"]
@@ -320,7 +321,7 @@ class ConnectionService:
             if protocol.casefold() == "ssh":
                 try:
                     ssh_handler = SSHHandler(
-                        host_or_ip, username, password, ssh_key_path
+                        host_or_ip, port, username, password, ssh_key_path
                     )
                     ssh_handler.connect()
                 except ConnectionHandlerException:

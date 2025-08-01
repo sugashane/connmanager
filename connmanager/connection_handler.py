@@ -3,8 +3,9 @@ import subprocess
 
 
 class ConnectionHandler:
-    def __init__(self, host_or_ip, username, password, protocol):
+    def __init__(self, host_or_ip, port, username, password, protocol):
         self.host_or_ip = host_or_ip
+        self.port = port
         self.username = username
         self.password = password
         self.protocol = protocol
@@ -16,8 +17,8 @@ class ConnectionHandler:
 class SSHHandler(ConnectionHandler):
     protocol = "ssh"
 
-    def __init__(self, host_or_ip, username, password=None, ssh_key_path=None):
-        super().__init__(host_or_ip, username, password, protocol="ssh")
+    def __init__(self, host_or_ip, port, username, password=None, ssh_key_path=None):
+        super().__init__(host_or_ip, port, username, password, protocol="ssh")
         self.ssh_key_path = ssh_key_path
 
     def connect(self):
@@ -38,12 +39,15 @@ class SSHHandler(ConnectionHandler):
             ssh_command.extend(["-i", self.ssh_key_path])
 
         # Add the username and host information
+        if self.port:
+            ssh_command.append(f"-p {self.port}")
+
         if self.username:
             ssh_command.append(f"{self.username}@{self.host_or_ip}")
         else:
             ssh_command.append(self.host_or_ip)
         # Open an SSH session. The -t flag forces pseudo-terminal allocation
-        #print(ssh_command)
+        # print(ssh_command)
         try:
             subprocess.run(ssh_command, check=True)
         except subprocess.CalledProcessError as e:
