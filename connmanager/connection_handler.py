@@ -157,7 +157,7 @@ class HTTPHandler(ConnectionHandler):
             http_command: list[str] = [f'open "{self.host_or_ip}"']
         else:
             self.host_or_ip = "http://" + self.host_or_ip
-        http_command: list[str] = [f'open "{self.host_or_ip}"']
+            http_command: list[str] = [f'open "{self.host_or_ip}"']
         logger.info(f"Opening HTTP URL: {self.host_or_ip}")
         logger.debug(f"HTTP command: {http_command}")
         try:
@@ -165,7 +165,6 @@ class HTTPHandler(ConnectionHandler):
         except subprocess.CalledProcessError as e:
             logger.error(f"http session failed to start: {e}")
             raise ConnectionHandlerException(f"http session failed to start: {e}")
-        webbrowser.open(self.host_or_ip)
 
 class ConnectionHandlerException(Exception):
     """

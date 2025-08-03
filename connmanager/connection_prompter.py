@@ -132,7 +132,7 @@ class ConnectionPrompter:
                 break
 
         extras: Dict[str, str] = get_default('extras', {}) or {}
-        logger.info("Enter extra options (key=value). Type 'done' when finished:")
+        print("Enter extra options (key=value). Type 'done' when finished:")
         while True:
             extra = input().strip()
             if extra.lower() == "done":
