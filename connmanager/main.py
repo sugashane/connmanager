@@ -10,7 +10,7 @@ from connmanager.connection_service import ConnectionService
 from connmanager.database_connection import DatabaseConnection
 from connmanager.logging_utils import setup_logging
 
-DB_PATH = os.path.expanduser(".cm.db")
+DB_PATH = os.path.expanduser("~/.cm.db")
 logger = logging.getLogger(__name__)
 
 def parse_args() -> argparse.ArgumentParser:
