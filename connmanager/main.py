@@ -2,15 +2,15 @@
 
 
 import argparse
+
 import os
 import sys
 import logging
-
 from connmanager.connection_service import ConnectionService
 from connmanager.database_connection import DatabaseConnection
 from connmanager.logging_utils import setup_logging
+from connmanager.config_utils import load_config
 
-DB_PATH = os.path.expanduser("~/.cm.db")
 logger = logging.getLogger(__name__)
 
 def parse_args() -> argparse.ArgumentParser:
@@ -87,6 +87,7 @@ def map_shortened_commands(args: list[str]) -> list[str]:
         args[0] = command_aliases[args[0]]
     return args
 
+
 def main() -> None:
     """
     Main entry point for the CLI tool. Handles argument parsing, logging, and command dispatch.
@@ -102,7 +103,9 @@ def main() -> None:
     # Set up logging level
     setup_logging(debug=getattr(args, "debug", False))
 
-    db = DatabaseConnection(DB_PATH)
+    config = load_config()
+    db_path = config.get("db_path", os.path.expanduser("~/.cm.db"))
+    db = DatabaseConnection(db_path)
     manager = ConnectionService(db)
 
     if args.command.casefold() == "add":

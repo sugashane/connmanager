@@ -10,9 +10,12 @@ A connection manager for SSH, RDP, VNC, and VMRC.
 
 ## Important Note
 
-**Security Warning**: Passwords are stored in the database and exported JSON files as plain text. To ensure the security of your credentials, avoid making these files publicly visible. Additionally, providing a password when adding an entry is optional. If you choose not to provide a password, you will be prompted to enter it when connecting.
 
-Implementing encryption is planned and will be in a separate repo in order to have both options available.
+**Security Notice**: Passwords are now **encrypted at rest** in the database using Fernet symmetric encryption (`cryptography` package). Your credentials are protected in the local database file (`~/.cm.db`).
+
+**Export Warning**: When you export connections to a JSON file, passwords are written in plaintext for compatibility. **Protect exported files** and do not share them publicly. You will see a warning during export.
+
+If you do not provide a password when adding an entry, you will be prompted to enter it when connecting.
 
 ## Prerequisites
 
@@ -49,16 +52,27 @@ git clone https://github.com/sugashane/connmanager.git
 cd connmanager
 ```
 
+
 ### Install the Package
 
 ```sh
 pip install .
 ```
 
--or-
+or
 
 ```sh
 pip3 install .
+```
+
+#### Required Python Packages
+
+- `cryptography` (for Fernet encryption)
+
+This will be installed automatically with the package, but you can also install it manually:
+
+```sh
+pip install cryptography
 ```
 
 ## Usage

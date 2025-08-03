@@ -190,14 +190,25 @@ class ConnectionService:
 
     def export_connections(self, json_file: str) -> None:
         """
-        Export all connections to a JSON file.
+        Export all connections to a JSON file with decrypted passwords.
         """
         try:
+            logger.warning("Exported JSON will contain passwords in plaintext. Handle with care!\n")
             connections = self.database.get_all_connections()
+            decrypted_connections = []
             for connection in connections:
                 connection.pop("id", None)
+                # Decrypt password if present
+                if "password" in connection and connection["password"]:
+                    try:
+                        # Use the same decrypt logic as in _row_to_connection_details
+                        from connmanager.encryption_utils import decrypt
+                        connection["password"] = decrypt(connection["password"])
+                    except Exception:
+                        logger.warning(f"Failed to decrypt password for alias '{connection.get('alias', '')}'. Exporting as-is.")
+                decrypted_connections.append(connection)
             with open(json_file, "w") as file:
-                json.dump(connections, file, indent=4)
+                json.dump(decrypted_connections, file, indent=4)
             logger.info(f"Connections exported successfully to {json_file}.")
         except Exception as e:
             logger.error(f"An error occurred while exporting connections: {e}")
