@@ -9,6 +9,7 @@ import sqlite3
 import logging
 from typing import Optional, Dict, Any, List, Union
 from connmanager.connection_prompter import ConnectionDetails
+from connmanager.encryption_utils import encrypt, decrypt
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -67,29 +68,30 @@ class DatabaseConnection:
         extras: Optional[Dict[str, str]] = None,
     ) -> None:
         """
-        Add a new connection to the database.
+        Add a new connection to the database. Password is encrypted before storing.
         """
         extras_json = json.dumps(extras) if extras else "{}"
+        enc_password = encrypt(password) if password else None
         try:
             self.cursor.execute(
-            """
-            INSERT INTO connections (alias, protocol, host_or_ip, port, username, password, ssh_key_path, domain, resolution, tag, extras)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                alias,
-                protocol,
-                host_or_ip,
-                port,
-                username,
-                password,
-                ssh_key_path,
-                domain,
-                resolution,
-                tag,
-                extras_json,
-            ),
-        )
+                """
+                INSERT INTO connections (alias, protocol, host_or_ip, port, username, password, ssh_key_path, domain, resolution, tag, extras)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    alias,
+                    protocol,
+                    host_or_ip,
+                    port,
+                    username,
+                    enc_password,
+                    ssh_key_path,
+                    domain,
+                    resolution,
+                    tag,
+                    extras_json,
+                ),
+            )
             self.conn.commit()
             logger.info(f"Added connection '{alias}' to database.")
         except Exception as e:
@@ -119,8 +121,9 @@ class DatabaseConnection:
         password: Optional[str],
     ) -> None:
         """
-        Edit an existing connection by id.
+        Edit an existing connection by id. Password is encrypted before storing.
         """
+        enc_password = encrypt(password) if password else None
         try:
             self.cursor.execute(
                 """
@@ -128,7 +131,7 @@ class DatabaseConnection:
                 SET protocol=?, host_or_ip=?, port=?, username=?, password=?
                 WHERE id=?
             """,
-                (protocol, host_or_ip, port, username, password, connection_id),
+                (protocol, host_or_ip, port, username, enc_password, connection_id),
             )
             self.conn.commit()
             logger.info(f"Edited connection id '{connection_id}'.")
@@ -242,12 +245,14 @@ class DatabaseConnection:
 
     def update_connection(self, alias_or_id: Union[str, int], **connection_details) -> None:
         """
-        Update a connection by alias or id.
+        Update a connection by alias or id. Password is encrypted before storing.
         """
         try:
             # Serialize 'extras' dict to JSON string if present
             if 'extras' in connection_details and isinstance(connection_details['extras'], dict):
                 connection_details['extras'] = json.dumps(connection_details['extras'])
+            if 'password' in connection_details and connection_details['password']:
+                connection_details['password'] = encrypt(connection_details['password'])
             set_clause = ", ".join([f"{key} = ?" for key in connection_details.keys()])
             query = f"UPDATE connections SET {set_clause} WHERE alias = ? OR id = ?"
             params = list(connection_details.values()) + [alias_or_id, alias_or_id]
@@ -295,6 +300,7 @@ class DatabaseConnection:
     def _row_to_connection_details(self, row: sqlite3.Row) -> ConnectionDetails:
         """
         Convert a DB row to a ConnectionDetails dataclass, handling JSON for extras and str for port.
+        Decrypts password field if present.
         """
         data = dict(row)
         alias = data.get("alias") or ""
@@ -313,13 +319,19 @@ class DatabaseConnection:
                 extras = {}
         elif not extras:
             extras = {}
+        password = data.get("password")
+        if password:
+            try:
+                password = decrypt(password)
+            except Exception:
+                logger.warning("Failed to decrypt password. Returning as-is.")
         return ConnectionDetails(
             alias=alias,
             protocol=protocol,
             host_or_ip=host_or_ip,
             port=port,
             username=data.get("username"),
-            password=data.get("password"),
+            password=password,
             ssh_key_path=data.get("ssh_key_path"),
             domain=data.get("domain"),
             resolution=data.get("resolution"),

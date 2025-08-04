@@ -1,18 +1,22 @@
+
 # ConnManager
 
-A connection manager for SSH, RDP, VNC, and VMRC.
+A connection manager for SSH, RDP, VNC, VMRC, and HTTP.
 
 ## Features
 
 - Add, edit, delete, and list connections
-- Connect to hosts using SSH, RDP, VNC, and VMRC
+- Connect to hosts using SSH, RDP, VNC, VMRC, and HTTP
 - Import and export connections as JSON
 
 ## Important Note
 
-**Security Warning**: Passwords are stored in the database and exported JSON files as plain text. To ensure the security of your credentials, avoid making these files publicly visible. Additionally, providing a password when adding an entry is optional. If you choose not to provide a password, you will be prompted to enter it when connecting.
 
-Implementing encryption is planned and will be in a separate repo in order to have both options available.
+**Security Notice**: Passwords are now **encrypted at rest** in the database using Fernet symmetric encryption (`cryptography` package). Your credentials are protected in the local database file (`~/.cm.db`).
+
+**Export Warning**: When you export connections to a JSON file, passwords are written in plaintext for compatibility. **Protect exported files** and do not share them publicly. You will see a warning during export.
+
+If you do not provide a password when adding an entry, you will be prompted to enter it when connecting.
 
 ## Prerequisites
 
@@ -42,24 +46,32 @@ You will need to install the following:
 
 ## Installation
 
-### Clone the Repository
+### Recommended: Install with pipx
+
+`pipx` is the best way to install CLI tools in an isolated environment:
+
+```sh
+pipx install 'git+https://github.com/sugashane/connmanager.git'
+```
+
+If you don't have pipx, install it with:
+
+```sh
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+```
+
+#### Alternative: Local Install
+
+Clone the repository and install locally:
 
 ```sh
 git clone https://github.com/sugashane/connmanager.git
 cd connmanager
-```
-
-### Install the Package
-
-```sh
 pip install .
 ```
 
--or-
-
-```sh
-pip3 install .
-```
+This project supports modern Python packaging with `pyproject.toml`.
 
 ## Usage
 
@@ -98,6 +110,8 @@ cm list <optional: protocol name or tag name>
 ```sh
 cm l <optional: protocol name or tag name>
 ```
+
+You can use protocol names like `ssh`, `rdp`, `vnc`, `vmrc`, or `http` as filters.
 
 ### Search Connections
 
