@@ -78,8 +78,8 @@ class SSHHandler(ConnectionHandler):
         try:
             subprocess.run(ssh_command, check=True)
         except subprocess.CalledProcessError as e:
-            logger.error(f"SSH session failed to start: {e}")
-            raise ConnectionHandlerException(f"SSH session failed to start: {e}")
+            logger.error(f"SSH session to {self.host_or_ip} failed to start")
+
 
 @register_protocol("rdp")
 class RDPHandler(ConnectionHandler):
