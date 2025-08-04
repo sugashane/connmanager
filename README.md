@@ -12,7 +12,7 @@ A connection manager for SSH, RDP, VNC, VMRC, and HTTP.
 ## Important Note
 
 
-**Security Notice**: Passwords are now **encrypted at rest** in the database using Fernet symmetric encryption (`cryptography` package). Your credentials are protected in the local database file (`~/.cm.db`).
+**Security Notice**: Passwords are now **encrypted at rest** in the database using Fernet symmetric encryption (`cryptography` package). Your credentials are protected in the local database file (`~/.config/cm/cm.db`).
 
 **Export Warning**: When you export connections to a JSON file, passwords are written in plaintext for compatibility. **Protect exported files** and do not share them publicly. You will see a warning during export.
 
@@ -175,9 +175,18 @@ cm x <json_file>
 
 ## Database Location
 
-By default, the database is stored at: `~/.cm.db`
+By default, the database is stored at: `~/.config/cm/cm.db`
+The encryption key is stored at: `~/.config/cm/cm.key`
 
-You can change the database location by updating the DB_PATH variable in the main.py script.
+You can change the database and key locations by editing the `config.ini` file at `~/.config/cm/config.ini`.
+
+Example `config.ini`:
+
+```ini
+[connmanager]
+db_path = /Users/youruser/.config/cm/cm.db
+key_path = /Users/youruser/.config/cm/cm.key
+```
 
 ## License
 
