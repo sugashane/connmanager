@@ -138,12 +138,28 @@ class VMRCHandler(ConnectionHandler):
             logger.error(f"vmrc session failed to start: {e}")
             raise ConnectionHandlerException(f"vmrc session failed to start: {e}")
 
+
 @register_protocol("vnc")
 class VNCHandler(ConnectionHandler):
     protocol = "vnc"
 
+    def __init__(self, host_or_ip: str, port: Optional[int] = None, **kwargs) -> None:
+        # Default port to 5901 if not provided
+        if port is None:
+            port = 5901
+        super().__init__(host_or_ip, port=port, protocol="vnc")
+
     def connect(self) -> None:
-        logger.info("VNC connect not implemented.")
+        # Example: open vnc://host:port (macOS)
+        vnc_url = f"vnc://{self.host_or_ip}:{self.port}"
+        vnc_command = [f'open "{vnc_url}"']
+        logger.info(f"Opening VNC connection to {vnc_url}")
+        logger.debug(f"VNC command: {vnc_command}")
+        try:
+            subprocess.run(vnc_command, check=True, shell=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"VNC session failed to start: {e}")
+            raise ConnectionHandlerException(f"VNC session failed to start: {e}")
 
 @register_protocol("http")
 class HTTPHandler(ConnectionHandler):
