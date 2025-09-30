@@ -225,40 +225,52 @@ class ConnectionManagerTUI:
         help_text = [
             "Connection Manager TUI - Help",
             "",
-            "Navigation:",
-            "  ↑/k        - Move up",
-            "  ↓/j        - Move down", 
-            "  Home/g     - Go to first connection",
-            "  End/G      - Go to last connection",
+            "NAVIGATION:",
+            "  ↑/k, ↓/j     Navigate up/down",
+            "  Home/g       Go to first connection",
+            "  End/G        Go to last connection",
             "",
-            "Actions:",
-            "  Enter      - Exit TUI and connect to selected connection",
-            "  a          - Add new connection",
-            "  e          - Edit selected connection", 
-            "  d          - Delete selected connection",
-            "  r          - Refresh connections list",
+            "ACTIONS:",
+            "  Enter        Exit TUI and connect to selected connection",
+            "  a            Add new connection",
+            "  e            Edit selected connection", 
+            "  d            Delete selected connection",
+            "  r            Refresh connections list",
             "",
-            "Search:",
-            "  /          - Enter search mode (real-time filtering)",
-            "  Type       - Filter connections as you type",
-            "  Enter      - Apply search and exit search mode",
-            "  Esc        - Exit search mode (keep current filter)",
-            "  Ctrl+C     - Clear search and exit search mode",
+            "SEARCH:",
+            "  /            Enter search mode (real-time filtering)",
+            "  [typing]     Filter connections as you type",
+            "  Enter        Apply search and exit search mode",
+            "  Esc          Exit search mode (keep current filter)",
+            "  Ctrl+C       Clear search and exit search mode",
             "",
-            "Other:",
-            "  h/?        - Show/hide this help",
-            "  q/Ctrl+C   - Quit application",
+            "OTHER:",
+            "  h, ?         Show/hide this help",
+            "  q, Ctrl+C    Quit application",
             "",
-            "Press any key to return..."
+            "Press any key to return to main screen..."
         ]
         
-        # Center the help text
-        start_y = max(0, (height - len(help_text)) // 2)
+        # Left-align help text with some padding
+        start_y = max(1, (height - len(help_text)) // 2)
+        left_margin = 4
+        
         for i, line in enumerate(help_text):
             if start_y + i < height - 1:
-                x = max(0, (width - len(line)) // 2)
-                attr = curses.A_BOLD if i == 0 else 0
-                stdscr.addstr(start_y + i, x, line[:width-1], attr)
+                if line and not line.startswith(" "):
+                    # Section headers - bold and slightly indented
+                    attr = curses.A_BOLD | curses.color_pair(1)
+                    x = left_margin
+                elif line.startswith("  "):
+                    # Command descriptions - normal text, more indented
+                    attr = 0
+                    x = left_margin + 2
+                else:
+                    # Empty lines or other text
+                    attr = 0
+                    x = left_margin
+                
+                stdscr.addstr(start_y + i, x, line[:width-x-1], attr)
     
     def handle_key(self, stdscr, key: int) -> bool:
         """
