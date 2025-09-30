@@ -246,6 +246,9 @@ class ConnectionManagerTUI:
         """
         Handle keyboard input. Returns True if should exit.
         """
+        # Debug: show key code in status (remove this after testing)
+        self.status_message = f"Key pressed: {key} ({chr(key) if 32 <= key <= 126 else 'special'})"
+        
         if self.show_help:
             self.show_help = False
             return False
@@ -264,8 +267,10 @@ class ConnectionManagerTUI:
             self.current_selection = max(0, len(self.filtered_connections) - 1)
         
         # Action keys
-        elif key == ord('\n') or key == curses.KEY_ENTER:
+        elif key in [ord('\n'), ord('\r'), curses.KEY_ENTER, 10, 13]:
             self.connect_to_selected()
+            if self.connection_requested:
+                return True  # Exit TUI to connect
         elif key == ord('a'):
             self.add_connection(stdscr)
         elif key == ord('e'):
@@ -282,7 +287,7 @@ class ConnectionManagerTUI:
         elif key in [ord('q'), 3]:  # 'q' or Ctrl+C
             return True
         
-        self.status_message = ""  # Clear status message after any key
+        # Don't clear debug status message for now
         return False
     
     def handle_search_key(self, key: int) -> bool:
