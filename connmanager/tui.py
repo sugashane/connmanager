@@ -35,6 +35,9 @@ class ConnectionManagerTUI:
         self.search_mode = False
         self.search_input = ""
         
+        # Connection request (set when user wants to connect)
+        self.connection_requested = None
+        
     def run(self, stdscr) -> None:
         """
         Main TUI loop.
@@ -194,7 +197,7 @@ class ConnectionManagerTUI:
         """
         Draw the footer with key bindings.
         """
-        controls = "↑↓:Navigate | Enter:Connect | a:Add | e:Edit | d:Delete | /:Search | r:Refresh | h:Help | q:Quit"
+        controls = "↑↓:Navigate | Enter:Exit&Connect | a:Add | e:Edit | d:Delete | /:Search | r:Refresh | h:Help | q:Quit"
         stdscr.addstr(y, 0, controls[:width-1], curses.color_pair(6))
     
     def draw_help_screen(self, stdscr) -> None:
@@ -213,7 +216,7 @@ class ConnectionManagerTUI:
             "  End/G      - Go to last connection",
             "",
             "Actions:",
-            "  Enter      - Connect to selected connection",
+            "  Enter      - Exit TUI and connect to selected connection",
             "  a          - Add new connection",
             "  e          - Edit selected connection", 
             "  d          - Delete selected connection",
@@ -307,7 +310,8 @@ class ConnectionManagerTUI:
     
     def connect_to_selected(self) -> None:
         """
-        Connect to the currently selected connection.
+        Request connection to the currently selected connection.
+        This will exit the TUI and return the connection alias/id.
         """
         if not self.filtered_connections or self.current_selection >= len(self.filtered_connections):
             self.status_message = "No connection selected"
@@ -316,12 +320,9 @@ class ConnectionManagerTUI:
         conn = self.filtered_connections[self.current_selection]
         alias_or_id = conn.get('alias') or str(conn.get('id'))
         
-        try:
-            # This will exit the TUI and connect
-            self.service.connect_to_alias_or_id(alias_or_id)
-            self.status_message = f"Connecting to {alias_or_id}..."
-        except Exception as e:
-            self.status_message = f"Error connecting: {str(e)}"
+        # Set the connection request and exit TUI
+        self.connection_requested = alias_or_id
+        self.status_message = f"Exiting TUI to connect to {alias_or_id}..."
     
     def add_connection(self, stdscr) -> None:
         """
@@ -399,15 +400,18 @@ class ConnectionManagerTUI:
             curses.curs_set(0)
 
 
-def run_tui(connection_service: ConnectionService) -> None:
+def run_tui(connection_service: ConnectionService) -> Optional[str]:
     """
     Run the TUI application.
+    Returns the alias/id of a connection to connect to, or None if no connection was requested.
     """
     tui = ConnectionManagerTUI(connection_service)
     try:
         curses.wrapper(tui.run)
+        return tui.connection_requested
     except KeyboardInterrupt:
-        pass
+        return None
     except Exception as e:
         logger.error(f"TUI error: {e}")
         print(f"TUI error: {e}")
+        return None

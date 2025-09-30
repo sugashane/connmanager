@@ -115,7 +115,10 @@ def main() -> None:
     if args.command.casefold() == "add":
         manager.add_connection()
     elif args.command.casefold() == "tui":
-        run_tui(manager)
+        connection_requested = run_tui(manager)
+        if connection_requested:
+            # User selected a connection to connect to, execute it
+            manager.connect_to_alias_or_id(connection_requested)
     elif args.command == "edit":
         manager.edit_connection(args.alias_or_id)
     elif args.command.casefold() == "delete":
