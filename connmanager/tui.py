@@ -49,12 +49,24 @@ class ConnectionManagerTUI:
         # Initialize colors if available
         if curses.has_colors():
             curses.start_color()
-            curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)    # Header
-            curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)   # Selected
-            curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)   # Success
-            curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)     # Error
-            curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Warning
-            curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)    # Info
+            
+            try:
+                curses.use_default_colors()  # Use terminal's default colors
+                # Define color pairs that work well with dark themes
+                curses.init_pair(1, curses.COLOR_CYAN, -1)      # Header - cyan on default
+                curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_CYAN)   # Selected - black on cyan
+                curses.init_pair(3, curses.COLOR_GREEN, -1)     # Success - green on default
+                curses.init_pair(4, curses.COLOR_RED, -1)       # Error - red on default
+                curses.init_pair(5, curses.COLOR_YELLOW, -1)    # Warning - yellow on default
+                curses.init_pair(6, curses.COLOR_BLUE, -1)      # Info - blue on default
+            except:
+                # Fallback for terminals that don't support default colors
+                curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)    # Header
+                curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLUE)    # Selected
+                curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)   # Success
+                curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)     # Error
+                curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Warning
+                curses.init_pair(6, curses.COLOR_BLUE, curses.COLOR_BLACK)    # Info
         
         # Load initial connections
         self.refresh_connections()
@@ -189,8 +201,11 @@ class ConnectionManagerTUI:
             # Format connection line
             line = f"{conn.get('id', 0):<4} {conn.get('alias', ''):<20} {conn.get('protocol', ''):<8} {conn.get('host_or_ip', ''):<25} {conn.get('tag', '') or '':<15}"
             
-            # Highlight selected line
-            attr = curses.color_pair(2) | curses.A_BOLD if i == self.current_selection else 0
+            # Highlight selected line with reverse video (works better with themes)
+            if i == self.current_selection:
+                attr = curses.A_REVERSE | curses.A_BOLD
+            else:
+                attr = 0
             stdscr.addstr(y, 0, line[:width-1], attr)
     
     def draw_footer(self, stdscr, y: int, width: int) -> None:
@@ -246,9 +261,6 @@ class ConnectionManagerTUI:
         """
         Handle keyboard input. Returns True if should exit.
         """
-        # Debug: show key code in status (remove this after testing)
-        self.status_message = f"Key pressed: {key} ({chr(key) if 32 <= key <= 126 else 'special'})"
-        
         if self.show_help:
             self.show_help = False
             return False
@@ -287,7 +299,9 @@ class ConnectionManagerTUI:
         elif key in [ord('q'), 3]:  # 'q' or Ctrl+C
             return True
         
-        # Don't clear debug status message for now
+        # Clear status message after navigation/action keys
+        if key not in [ord('/'), ord('h'), ord('?')]:
+            self.status_message = ""
         return False
     
     def handle_search_key(self, key: int) -> bool:
