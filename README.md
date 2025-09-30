@@ -75,7 +75,13 @@ This project supports modern Python packaging with `pyproject.toml`.
 
 ## Usage
 
-### Launch Interactive TUI
+### Launch Interactive TUI (Default)
+
+```sh
+cm
+```
+
+The TUI launches automatically when no command is specified. You can also explicitly launch it with:
 
 ```sh
 cm tui

@@ -22,7 +22,8 @@ def parse_args() -> argparse.ArgumentParser:
     parser.add_argument(
         "-d", "--debug", action="store_true", help="Enable debug logging."
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command", required=False, 
+                                       help="Available commands (defaults to 'tui' if none specified)")
 
     subparsers.add_parser("add", help='Add a new connection. Can be shortened to "a".')
 
@@ -96,9 +97,9 @@ def main() -> None:
     """
     Main entry point for the CLI tool. Handles argument parsing, logging, and command dispatch.
     """
+    # If no arguments provided, default to TUI
     if len(sys.argv) < 2:
-        logger.error("No command provided. Use -h or --help for usage information.")
-        sys.exit(1)
+        sys.argv.append("tui")
 
     mapped_args = map_shortened_commands(sys.argv[1:])
     parser = parse_args()
@@ -112,26 +113,28 @@ def main() -> None:
     db = DatabaseConnection(db_path)
     manager = ConnectionService(db)
 
-    if args.command.casefold() == "add":
+    # Default to TUI if no command specified
+    command = args.command or "tui"
+    
+    if command.casefold() == "add":
         manager.add_connection()
-    elif args.command.casefold() == "tui":
+    elif command.casefold() == "tui":
         connection_requested = run_tui(manager)
         if connection_requested:
-            # User selected a connection to connect to, execute it
             manager.connect_to_alias_or_id(connection_requested)
-    elif args.command == "edit":
+    elif command == "edit":
         manager.edit_connection(args.alias_or_id)
-    elif args.command.casefold() == "delete":
+    elif command.casefold() == "delete":
         manager.delete_connection(args.alias_or_id)
-    elif args.command.casefold() == "list":
+    elif command.casefold() == "list":
         manager.get_connections_summary(args.protocol_or_tag)
-    elif args.command.casefold() == "search":
+    elif command.casefold() == "search":
         manager.search_connections(args.text)
-    elif args.command.casefold() == "connect":
+    elif command.casefold() == "connect":
         manager.connect_to_alias_or_id(args.alias_or_id)
-    elif args.command == "import":
+    elif command == "import":
         manager.import_connections(args.json_file)
-    elif args.command == "export":
+    elif command == "export":
         manager.export_connections(args.json_file)
 
 if __name__ == "__main__":
