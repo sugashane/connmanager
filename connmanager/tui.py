@@ -167,15 +167,16 @@ class ConnectionManagerTUI:
         """
         Draw the search bar.
         """
-        search_text = f"Search: {self.search_query}"
         if self.search_mode:
-            search_text += "_"  # Show cursor
-        
-        stdscr.addstr(y, 0, search_text[:width-1])
-        
-        if self.search_mode:
+            # Show what user is currently typing
+            search_text = f"Search: {self.search_input}_"
+            stdscr.addstr(y, 0, search_text[:width-10])
             # Show search mode indicator
-            stdscr.addstr(y, min(len(search_text), width-10), "[SEARCH]", curses.color_pair(6))
+            stdscr.addstr(y, min(len(search_text), width-10), "[TYPING]", curses.color_pair(6))
+        else:
+            # Show current applied search filter
+            search_text = f"Search: {self.search_query}" if self.search_query else "Search: (press / to search)"
+            stdscr.addstr(y, 0, search_text[:width-1])
     
     def draw_connections_list(self, stdscr, start_y: int, height: int, width: int) -> None:
         """
@@ -238,9 +239,11 @@ class ConnectionManagerTUI:
             "  r          - Refresh connections list",
             "",
             "Search:",
-            "  /          - Enter search mode",
-            "  Esc        - Exit search mode",
-            "  Ctrl+C     - Clear search",
+            "  /          - Enter search mode (real-time filtering)",
+            "  Type       - Filter connections as you type",
+            "  Enter      - Apply search and exit search mode",
+            "  Esc        - Exit search mode (keep current filter)",
+            "  Ctrl+C     - Clear search and exit search mode",
             "",
             "Other:",
             "  h/?        - Show/hide this help",
@@ -322,8 +325,14 @@ class ConnectionManagerTUI:
             self.apply_search_filter()
         elif key in [curses.KEY_BACKSPACE, 127, 8]:
             self.search_input = self.search_input[:-1]
+            # Apply filter in real-time as user types
+            self.search_query = self.search_input
+            self.apply_search_filter()
         elif 32 <= key <= 126:  # Printable characters
             self.search_input += chr(key)
+            # Apply filter in real-time as user types
+            self.search_query = self.search_input
+            self.apply_search_filter()
         
         return False
     
