@@ -213,7 +213,7 @@ class ConnectionManagerTUI:
         """
         Draw the footer with key bindings.
         """
-        controls = "↑↓:Navigate | Enter:Exit&Connect | a:Add | e:Edit | d:Delete | /:Search | r:Refresh | h:Help | q:Quit"
+        controls = "↑↓:Navigate | Enter:Exit&Connect | a:Add | e:Edit | d:Delete | /:Search | c:Clear | r:Refresh | h:Help | q:Quit"
         stdscr.addstr(y, 0, controls[:width-1], curses.color_pair(6))
     
     def draw_help_screen(self, stdscr) -> None:
@@ -241,8 +241,9 @@ class ConnectionManagerTUI:
             "  /            Enter search mode (real-time filtering)",
             "  [typing]     Filter connections as you type",
             "  Enter        Apply search and exit search mode",
-            "  Esc          Exit search mode (keep current filter)",
-            "  Ctrl+C       Clear search and exit search mode",
+            "  Esc          Clear search and exit search mode",
+            "  Ctrl+U       Clear search input (stay in search mode)",
+            "  c            Clear active search (from main view)",
             "",
             "OTHER:",
             "  h, ?         Show/hide this help",
@@ -309,6 +310,11 @@ class ConnectionManagerTUI:
         elif key == ord('/'):
             self.search_mode = True
             self.search_input = ""
+        elif key == ord('c') and self.search_query:  # Clear search (only if there's an active search)
+            self.search_query = ""
+            self.search_input = ""
+            self.apply_search_filter()
+            self.status_message = "Search cleared"
         elif key in [ord('h'), ord('?')]:
             self.show_help = True
         elif key in [ord('q'), 3]:  # 'q' or Ctrl+C
@@ -323,15 +329,16 @@ class ConnectionManagerTUI:
         """
         Handle keyboard input in search mode.
         """
-        if key == 27:  # Escape
-            self.search_mode = False
-            self.search_input = ""
-        elif key == 3:  # Ctrl+C
+        if key == 27:  # Escape - clear search and exit search mode
             self.search_mode = False
             self.search_input = ""
             self.search_query = ""
             self.apply_search_filter()
-        elif key in [ord('\n'), curses.KEY_ENTER]:
+        elif key == 21:  # Ctrl+U - clear current input but stay in search mode
+            self.search_input = ""
+            self.search_query = ""
+            self.apply_search_filter()
+        elif key in [ord('\n'), ord('\r'), curses.KEY_ENTER, 10, 13]:
             self.search_mode = False
             self.search_query = self.search_input
             self.apply_search_filter()
