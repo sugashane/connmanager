@@ -111,7 +111,15 @@ class ConnectionPrompter:
             if auth_method == "key":
                 ssh_key_path = input(f"Enter path to SSH private key (default is ~/.ssh/id_rsa){f' [{get_default('ssh_key_path')}]' if existing else ''}: ").strip() or get_default('ssh_key_path') or "~/.ssh/id_rsa"
             else:
-                password = self.password_comparison() if not existing else (input("Enter the password (press Enter to keep current): ") or get_default('password'))
+                if not existing:
+                    password = self.password_comparison()
+                else:
+                    # For editing, ask if they want to change the password
+                    change_password = input("Change password? (y/N): ").strip().lower()
+                    if change_password == 'y':
+                        password = self.password_comparison()
+                    else:
+                        password = get_default('password')  # Keep existing password
         elif protocol.casefold() == "rdp":
             if (
                 host_or_ip is not None
@@ -120,7 +128,15 @@ class ConnectionPrompter:
                 and not host_or_ip.endswith("]")
             ):
                 host_or_ip = f"[{host_or_ip}]"
-            password = self.password_comparison() if not existing else (input("Enter the password (press Enter to keep current): ") or get_default('password'))
+            if not existing:
+                password = self.password_comparison()
+            else:
+                # For editing, ask if they want to change the password
+                change_password = input("Change password? (y/N): ").strip().lower()
+                if change_password == 'y':
+                    password = self.password_comparison()
+                else:
+                    password = get_default('password')  # Keep existing password
             domain = input(f"Enter the domain (press Enter if not applicable){f' [{get_default('domain')}]' if existing else ''}: ") or get_default('domain')
             resolution = input(f"Enter the resolution (e.g., 1920x1080){f' [{get_default('resolution')}]' if existing else ''}: ") or get_default('resolution')
 
