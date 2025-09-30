@@ -1,0 +1,38 @@
+# _cm
+#compdef cm
+
+_cm() {
+    local state curcontext="$curcontext" ret=1
+    local -a commands aliases
+
+    commands=(
+        'add:Add a new connection (can be shortened to a)'
+        'connect:Connect to a host by alias or id (can be shortened to c)'
+        'list:List all connections (can be shortened to l)'
+        'search:Search connections (can be shortened to s)'
+        'delete:Delete a connection (can be shortened to d)'
+        'edit:Edit a connection (can be shortened to e)'
+        'import:Import connections from a JSON file (can be shortened to i)'
+        'export:Export connections to a JSON file (can be shortened to x)'
+    )
+
+    _arguments -C \
+        '1:command:->command' \
+        '*::args:->args'
+
+    case $state in
+        (command)
+            _describe -t commands 'cm commands' commands
+            ;;
+        (args)
+            local subcommand="${words[1]}"
+            if [[ "$subcommand" == "connect" || "$subcommand" == "c" || "$subcommand" == "edit" || "$subcommand" == "e" || "$subcommand" == "delete" || "$subcommand" == "d" ]]; then
+                # Extract aliases from the command output
+                aliases=(${(f)"$(cm list | awk 'NR>1 {print $4}' | grep -v '^Alias$' | grep -v '^$')"})
+                compadd -Q -a aliases
+            fi
+            ;;
+    esac
+}
+
+compdef _cm cm
