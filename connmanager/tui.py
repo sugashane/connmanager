@@ -378,7 +378,8 @@ class ConnectionManagerTUI:
         try:
             # Temporarily exit curses mode for the prompter
             curses.endwin()
-            self.service.add_connection()
+            # Use TUI-safe add connection that doesn't close database
+            self._tui_add_connection()
             # Re-initialize curses
             stdscr.refresh()
             self.refresh_connections()
@@ -389,6 +390,18 @@ class ConnectionManagerTUI:
             # Ensure curses is re-initialized
             stdscr.keypad(True)
             curses.curs_set(0)
+    
+    def _tui_add_connection(self) -> None:
+        """
+        TUI-safe version of add_connection that doesn't close the database.
+        """
+        try:
+            connection_details = self.service.prompter.prompt_connection_fields()
+            self.service.database.add_connection(**asdict(connection_details))
+            logger.info("Connection added successfully.")
+        except Exception as e:
+            logger.error(f"Error adding connection: {e}")
+            raise
     
     def edit_selected_connection(self, stdscr) -> None:
         """
@@ -404,7 +417,8 @@ class ConnectionManagerTUI:
         try:
             # Temporarily exit curses mode for the prompter
             curses.endwin()
-            self.service.edit_connection(alias_or_id)
+            # Use TUI-safe edit connection that doesn't close database
+            self._tui_edit_connection(alias_or_id)
             # Re-initialize curses
             stdscr.refresh()
             self.refresh_connections()
@@ -415,6 +429,27 @@ class ConnectionManagerTUI:
             # Ensure curses is re-initialized
             stdscr.keypad(True)
             curses.curs_set(0)
+    
+    def _tui_edit_connection(self, alias_or_id: str) -> None:
+        """
+        TUI-safe version of edit_connection that doesn't close the database.
+        """
+        try:
+            connection = self.service.database.get_connection(alias_or_id)
+            if not connection:
+                logger.info(f"No connection found with alias or ID '{alias_or_id}'.")
+                return
+            logger.info("Editing connection. Press Enter to keep the current value.")
+            connection_details = self.service.prompter.prompt_connection_fields(existing=connection)
+            try:
+                self.service.database.update_connection(connection_details.alias, **asdict(connection_details))
+                logger.info("Connection updated successfully.")
+            except Exception as e:
+                logger.error(f"Error updating connection: {e}")
+                raise
+        except Exception as e:
+            logger.error(f"An error occurred while editing connection: {e}")
+            raise
     
     def delete_selected_connection(self, stdscr) -> None:
         """
@@ -435,7 +470,8 @@ class ConnectionManagerTUI:
             
             if confirm == 'y':
                 alias_or_id = conn.get('alias') or str(conn.get('id'))
-                self.service.delete_connection(alias_or_id)
+                # Use TUI-safe delete that doesn't close database
+                self._tui_delete_connection(alias_or_id)
                 self.refresh_connections()
                 self.status_message = f"Connection {alias} deleted successfully"
             else:
@@ -445,6 +481,17 @@ class ConnectionManagerTUI:
         finally:
             stdscr.keypad(True)
             curses.curs_set(0)
+    
+    def _tui_delete_connection(self, alias_or_id: str) -> None:
+        """
+        TUI-safe version of delete_connection that doesn't close the database.
+        """
+        try:
+            self.service.database.delete_connection(alias_or_id)
+            logger.info(f"Connection with alias or ID '{alias_or_id}' deleted successfully.")
+        except Exception as e:
+            logger.error(f"An error occurred while deleting connection: {e}")
+            raise
 
 
 def run_tui(connection_service: ConnectionService) -> Optional[str]:
