@@ -225,6 +225,80 @@ db_path = /Users/youruser/.config/cm/cm.db
 key_path = /Users/youruser/.config/cm/cm.key
 ```
 
+## Shell Autocompletion
+
+### Zsh Completion
+
+For zsh autocompletion with command and connection alias suggestions:
+
+1. **Copy the completion script:**
+   ```sh
+   mkdir -p ~/.zsh/completions
+   cp completions/_cm ~/.zsh/completions/
+   ```
+
+2. **Add to your `~/.zshrc`:**
+   ```sh
+   # Add completion directory to fpath
+   fpath=(~/.zsh/completions $fpath)
+   
+   # Enable completions
+   autoload -Uz compinit
+   zstyle ':completion:*' menu select
+   zmodload zsh/complist
+   compinit
+   _comp_options+=(globdots)
+   
+   # Source the cm completion
+   source ~/.zsh/completions/_cm
+   ```
+
+3. **Reload your shell:**
+   ```sh
+   source ~/.zshrc
+   ```
+
+### Bash Completion
+
+For bash users, you can create a basic completion script:
+
+1. **Create completion script:**
+   ```sh
+   sudo tee /etc/bash_completion.d/cm > /dev/null << 'EOF'
+   _cm_completion() {
+       local cur prev commands
+       COMPREPLY=()
+       cur="${COMP_WORDS[COMP_CWORD]}"
+       prev="${COMP_WORDS[COMP_CWORD-1]}"
+       
+       commands="add connect list search delete edit tui import export a c l s d e t i x"
+       
+       if [[ ${COMP_CWORD} == 1 ]]; then
+           COMPREPLY=($(compgen -W "${commands}" -- ${cur}))
+           return 0
+       fi
+       
+       # Complete connection aliases for connect/edit/delete commands
+       if [[ "$prev" =~ ^(connect|edit|delete|c|e|d)$ ]]; then
+           local aliases=$(cm list 2>/dev/null | awk 'NR>1 {print $4}' | grep -v '^Alias$' | grep -v '^$')
+           COMPREPLY=($(compgen -W "${aliases}" -- ${cur}))
+       fi
+   }
+   
+   complete -F _cm_completion cm
+   EOF
+   ```
+
+2. **Reload bash completion:**
+   ```sh
+   source /etc/bash_completion.d/cm
+   ```
+
+**Features:**
+- Tab completion for all commands and shortcuts
+- Auto-suggests connection aliases for `connect`, `edit`, and `delete` commands
+- Works with both full commands (`connect`) and shortcuts (`c`)
+
 ## License
 
 This project is licensed under the MIT License.
