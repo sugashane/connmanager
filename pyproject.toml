@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,14 +10,13 @@ readme = "README.md"
 authors = [
     { name="Shane Bebber", email="shanebebber@gmail.com" }
 ]
-license = { file="LICENSE" }
+license = "MIT"
 requires-python = ">=3.6"
 dependencies = [
     "cryptography"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent"
 ]
 
@@ -26,3 +25,7 @@ Homepage = "https://github.com/sugashane/connmanager"
 
 [project.scripts]
 cm = "connmanager.main:main"
+
+[tool.setuptools.packages.find]
+include = ["connmanager*"]
+exclude = ["completions*"]
