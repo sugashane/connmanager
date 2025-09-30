@@ -12,6 +12,7 @@ _cm() {
         'search:Search connections (can be shortened to s)'
         'delete:Delete a connection (can be shortened to d)'
         'edit:Edit a connection (can be shortened to e)'
+        'tui:Launch the interactive TUI (an be shortened to t) and default when no arguments are provided'
         'import:Import connections from a JSON file (can be shortened to i)'
         'export:Export connections to a JSON file (can be shortened to x)'
     )

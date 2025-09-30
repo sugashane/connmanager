@@ -190,8 +190,11 @@ class ConnectionManagerTUI:
         visible_start = max(0, self.current_selection - height//2)
         visible_end = min(len(self.filtered_connections), visible_start + height)
         
+        # Calculate dynamic column widths based on terminal width
+        col_widths = self._calculate_column_widths(width)
+        
         # Draw column headers
-        headers = f"{'ID':<4} {'Alias':<20} {'Protocol':<8} {'Host/IP':<25} {'Tag':<15}"
+        headers = f"{'ID':<{col_widths['id']}} {'Alias':<{col_widths['alias']}} {'Protocol':<{col_widths['protocol']}} {'Host/IP':<{col_widths['host']}} {'Tag':<{col_widths['tag']}}"
         stdscr.addstr(start_y, 0, headers[:width-1], curses.A_BOLD)
         
         # Draw connections
@@ -199,8 +202,14 @@ class ConnectionManagerTUI:
             conn = self.filtered_connections[i]
             y = start_y + 1 + (i - visible_start)
             
-            # Format connection line
-            line = f"{conn.get('id', 0):<4} {conn.get('alias', ''):<20} {conn.get('protocol', ''):<8} {conn.get('host_or_ip', ''):<25} {conn.get('tag', '') or '':<15}"
+            # Format connection line with truncation
+            conn_id = str(conn.get('id', 0))
+            alias = self._truncate_text(conn.get('alias', ''), col_widths['alias'])
+            protocol = self._truncate_text(conn.get('protocol', ''), col_widths['protocol'])
+            host = self._truncate_text(conn.get('host_or_ip', ''), col_widths['host'])
+            tag = self._truncate_text(conn.get('tag', '') or '', col_widths['tag'])
+            
+            line = f"{conn_id:<{col_widths['id']}} {alias:<{col_widths['alias']}} {protocol:<{col_widths['protocol']}} {host:<{col_widths['host']}} {tag:<{col_widths['tag']}}"
             
             # Highlight selected line with reverse video (works better with themes)
             if i == self.current_selection:
@@ -208,6 +217,58 @@ class ConnectionManagerTUI:
             else:
                 attr = 0
             stdscr.addstr(y, 0, line[:width-1], attr)
+    
+    def _calculate_column_widths(self, terminal_width: int) -> Dict[str, int]:
+        """
+        Calculate optimal column widths based on terminal width.
+        """
+        # Minimum widths for each column
+        min_widths = {
+            'id': 4,
+            'alias': 12,
+            'protocol': 8,
+            'host': 15,
+            'tag': 8
+        }
+        
+        # Account for spaces between columns (4 spaces)
+        spacing = 4
+        available_width = terminal_width - spacing - 1  # -1 for safety margin
+        
+        # If terminal is too narrow, use minimum widths
+        min_total = sum(min_widths.values())
+        if available_width <= min_total:
+            return min_widths
+        
+        # Distribute extra space, prioritizing host column since it tends to be longest
+        extra_space = available_width - min_total
+        
+        # Give most extra space to host, some to alias, a bit to tag
+        widths = min_widths.copy()
+        
+        # Distribute extra space: 50% to host, 30% to alias, 20% to tag
+        host_extra = int(extra_space * 0.5)
+        alias_extra = int(extra_space * 0.3)
+        tag_extra = extra_space - host_extra - alias_extra
+        
+        widths['host'] += host_extra
+        widths['alias'] += alias_extra
+        widths['tag'] += tag_extra
+        
+        return widths
+    
+    def _truncate_text(self, text: str, max_width: int) -> str:
+        """
+        Truncate text to fit within max_width, adding ellipsis if needed.
+        """
+        if len(text) <= max_width:
+            return text
+        
+        if max_width <= 3:
+            return text[:max_width]
+        
+        # Use ellipsis for truncated text
+        return text[:max_width-3] + "..."
     
     def draw_footer(self, stdscr, y: int, width: int) -> None:
         """
