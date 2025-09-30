@@ -75,6 +75,37 @@ This project supports modern Python packaging with `pyproject.toml`.
 
 ## Usage
 
+### Launch Interactive TUI
+
+```sh
+cm tui
+```
+
+-or-
+
+```sh
+cm t
+```
+
+The TUI (Text User Interface) provides an interactive, curses-based interface where you can:
+- Browse all connections in a scrollable list
+- Search connections in real-time
+- Connect to selected connections with Enter
+- Add, edit, and delete connections
+- Navigate with arrow keys or vim-style keys (j/k)
+
+**TUI Controls:**
+- `↑/↓` or `j/k` - Navigate up/down
+- `Enter` - Connect to selected connection
+- `/` - Enter search mode
+- `Esc` - Exit search mode
+- `a` - Add new connection
+- `e` - Edit selected connection
+- `d` - Delete selected connection
+- `r` - Refresh connections list
+- `h` or `?` - Show help
+- `q` or `Ctrl+C` - Quit TUI
+
 ### Add a Connection
 
 ```sh

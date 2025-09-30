@@ -10,6 +10,7 @@ from connmanager.connection_service import ConnectionService
 from connmanager.database_connection import DatabaseConnection
 from connmanager.logging_utils import setup_logging
 from connmanager.config_utils import load_config
+from connmanager.tui import run_tui
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ def parse_args() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("add", help='Add a new connection. Can be shortened to "a".')
+
+    subparsers.add_parser("tui", help='Launch the interactive TUI (Text User Interface). Can be shortened to "t".')
 
     parser_connect = subparsers.add_parser(
         "connect", help='Connect to a host by alias or id. Can be shortened to "c".'
@@ -75,6 +78,7 @@ def map_shortened_commands(args: list[str]) -> list[str]:
     """
     command_aliases = {
         "a": "add",
+        "t": "tui",
         "l": "list",
         "s": "search",
         "c": "connect",
@@ -110,6 +114,8 @@ def main() -> None:
 
     if args.command.casefold() == "add":
         manager.add_connection()
+    elif args.command.casefold() == "tui":
+        run_tui(manager)
     elif args.command == "edit":
         manager.edit_connection(args.alias_or_id)
     elif args.command.casefold() == "delete":
