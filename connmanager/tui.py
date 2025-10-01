@@ -503,7 +503,7 @@ class ConnectionManagerTUI:
             logger.info("Editing connection. Press Enter to keep the current value.")
             connection_details = self.service.prompter.prompt_connection_fields(existing=connection)
             try:
-                self.service.database.update_connection(connection_details.alias, **asdict(connection_details))
+                self.service.database.update_connection(alias_or_id, **asdict(connection_details))
                 logger.info("Connection updated successfully.")
             except Exception as e:
                 logger.error(f"Error updating connection: {e}")
