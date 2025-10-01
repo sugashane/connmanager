@@ -1,7 +1,6 @@
 import shutil
 import subprocess
 import logging
-import webbrowser
 from typing import Any, Optional, Type, Dict
 
 logger = logging.getLogger(__name__)
@@ -169,11 +168,12 @@ class HTTPHandler(ConnectionHandler):
         super().__init__(host_or_ip, protocol="http")
 
     def connect(self) -> None:
+        http_command: list[str]
         if self.host_or_ip.startswith("http://") or self.host_or_ip.startswith("https://"):
-            http_command: list[str] = [f'open "{self.host_or_ip}"']
+            http_command = [f'open "{self.host_or_ip}"']
         else:
             self.host_or_ip = "http://" + self.host_or_ip
-            http_command: list[str] = [f'open "{self.host_or_ip}"']
+            http_command = [f'open "{self.host_or_ip}"']
         logger.info(f"Opening HTTP URL: {self.host_or_ip}")
         logger.debug(f"HTTP command: {http_command}")
         try:

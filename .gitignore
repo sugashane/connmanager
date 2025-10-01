@@ -3,5 +3,6 @@ connman.db
 __pycache__
 identifier.sqlite
 pyrightconfig.json
-build/lib/connmanager
+build/
+dist/
 connmanager.egg-info
