@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import logging
@@ -57,27 +58,58 @@ class SSHHandler(ConnectionHandler):
         ssh_key_path: Optional[str] = None,
     ) -> None:
         super().__init__(host_or_ip, port=port, username=username, password=password, protocol="ssh")
-        self.ssh_key_path = ssh_key_path
+        self.ssh_key_path = self._normalize_key_path(ssh_key_path)
 
-    def connect(self) -> None:
+    def _normalize_key_path(self, ssh_key_path: Optional[str]) -> Optional[str]:
+        if not ssh_key_path:
+            return None
+        cleaned = ssh_key_path.strip().replace("\n", "").replace("\r", "").replace("\t", "")
+        normalized = os.path.expandvars(os.path.expanduser(cleaned))
+        return normalized or None
+
+    def _build_ssh_base_command(self) -> list[str]:
         sshpass_installed = shutil.which("sshpass") is not None
         ssh_command: list[str] = []
         if sshpass_installed and self.password is not None:
             ssh_command.extend(["sshpass", "-p", self.password])
         ssh_command.extend(["ssh", "-o", "StrictHostKeyChecking=no"])
         if self.ssh_key_path:
+            if not os.path.isfile(self.ssh_key_path) or not os.access(self.ssh_key_path, os.R_OK):
+                raise ConnectionHandlerException(
+                    f"SSH identity file is not readable: {self.ssh_key_path!r}"
+                )
             ssh_command.extend(["-i", self.ssh_key_path])
         if self.port:
-            ssh_command.append(f"-p {self.port}")
+            ssh_command.extend(["-p", str(self.port)])
         if self.username:
             ssh_command.append(f"{self.username}@{self.host_or_ip}")
         else:
             ssh_command.append(self.host_or_ip)
+        return ssh_command
+
+    def connect(self) -> None:
+        ssh_command = self._build_ssh_base_command()
         logger.debug(f"Running SSH command: {' '.join(ssh_command)}")
         try:
             subprocess.run(ssh_command, check=True)
         except subprocess.CalledProcessError as e:
             logger.error(f"SSH session to {self.host_or_ip} failed to start")
+
+    def run_command(self, command: str, timeout: Optional[float] = 30) -> subprocess.CompletedProcess[str]:
+        ssh_command = self._build_ssh_base_command()
+        ssh_command.append(command)
+        logger.debug(f"Running SSH command: {' '.join(ssh_command)}")
+        try:
+            return subprocess.run(
+                ssh_command,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired as e:
+            logger.error(f"SSH command timed out for {self.host_or_ip}")
+            raise ConnectionHandlerException(f"SSH command timed out after {timeout}s")
 
 
 @register_protocol("rdp")
