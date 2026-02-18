@@ -34,6 +34,20 @@ def parse_args() -> argparse.ArgumentParser:
     )
     parser_connect.add_argument("alias_or_id", help="The alias or id of the connection to connect to.")
 
+    parser_ssh_run = subparsers.add_parser(
+        "ssh-run",
+        help="Run a command over SSH on a saved connection (SSH protocol only) and print stdout/stderr.",
+    )
+    parser_ssh_run.add_argument(
+        "alias_or_id",
+        help="The alias or id of the connection to run the SSH command against.",
+    )
+    parser_ssh_run.add_argument(
+        "remote_command",
+        nargs=argparse.REMAINDER,
+        help="The remote command to run (everything after alias_or_id is treated as the command).",
+    )
+
     parser_list = subparsers.add_parser(
         name="list",
         help='List all connections or all connections for a specified protocol. Can be shortened to "l".',
@@ -83,6 +97,7 @@ def map_shortened_commands(args: list[str]) -> list[str]:
         "l": "list",
         "s": "search",
         "c": "connect",
+        "r": "ssh-run",
         "d": "delete",
         "e": "edit",
         "i": "import",
@@ -132,6 +147,8 @@ def main() -> None:
         manager.search_connections(args.text)
     elif command.casefold() == "connect":
         manager.connect_to_alias_or_id(args.alias_or_id)
+    elif command == "ssh-run":
+        manager.run_ssh_command(args.alias_or_id, " ".join(args.remote_command).strip())
     elif command == "import":
         manager.import_connections(args.json_file)
     elif command == "export":

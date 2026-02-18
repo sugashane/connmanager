@@ -1,6 +1,7 @@
 import getpass
 import json
 import logging
+import sys
 from dataclasses import asdict
 from typing import Any, Optional
 
@@ -33,6 +34,57 @@ class ConnectionService:
             logger.info("Connection added successfully.")
         except Exception as e:
             logger.error(f"Error adding connection: {e}")
+        finally:
+            self.database.close()
+
+    def run_ssh_command(self, alias_or_id: str, command: str, timeout: Optional[float] = 30) -> None:
+        """
+        Run a command over SSH on a saved connection and print stdout/stderr.
+        """
+        try:
+            if not command:
+                logger.error("No remote command provided.")
+                return
+
+            if alias_or_id.isdigit():
+                connection_details = self.database.get_connection_by_id(int(alias_or_id))
+            else:
+                connection_details = self.database.get_connection_by_alias(alias_or_id)
+
+            protocol = getattr(connection_details, "protocol", None)
+            if not protocol or protocol.lower() != "ssh":
+                logger.error("ssh-run requires an SSH connection.")
+                return
+
+            from connmanager.connection_handler import SSHHandler
+
+            raw_kwargs = {k: v for k, v in asdict(connection_details).items() if v is not None}
+
+            # SSHHandler accepts: host_or_ip, port, username, password, ssh_key_path
+            handler_kwargs = {
+                k: v
+                for k, v in raw_kwargs.items()
+                if k in {"host_or_ip", "port", "username", "password", "ssh_key_path"}
+            }
+
+            handler = SSHHandler(**handler_kwargs)
+            result = handler.run_command(command, timeout=timeout)
+
+            if result.stdout:
+                sys.stdout.write(result.stdout)
+                if not result.stdout.endswith("\n"):
+                    sys.stdout.write("\n")
+            if result.stderr:
+                sys.stderr.write(result.stderr)
+                if not result.stderr.endswith("\n"):
+                    sys.stderr.write("\n")
+
+            if result.returncode != 0:
+                logger.error(f"Remote command exited with status {result.returncode}.")
+        except ConnectionHandlerException as e:
+            logger.error(f"SSH command failed/timed out: {e}")
+        except Exception as e:
+            logger.error(f"An error occurred while running SSH command: {e}")
         finally:
             self.database.close()
 
